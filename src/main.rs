@@ -22,21 +22,6 @@ pub struct Parameters {
     sub_commands: Option<SubCommands>,
 }
 
-#[derive(Debug,Clone)]
-pub enum  Selector{
-    /// 默认模式，选中整个文件的模式
-    Default{},
-    /// 选中首字母范围
-    /// 
-    /// 当beg>=end的情况下非法
-    FirstNumberRange{
-        ///beg: 开始数字 <=0 代表从当前最小的值开始
-        beg:i32,
-        ///end: 结束数字 <=0 代表到当前最大值结束
-        end:i32
-    },
-}
-
 /// 子命令模式
 #[derive(Debug, Clone, Subcommand)]
 pub enum SubCommands {
