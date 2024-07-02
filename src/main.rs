@@ -22,7 +22,7 @@ pub struct Parameters {
     sub_commands: Option<SubCommands>,
 }
 
-/// 子命令模式
+/// 子命令模式2
 #[derive(Debug, Clone, Subcommand)]
 pub enum SubCommands {
     /// 按照创建时间比较
