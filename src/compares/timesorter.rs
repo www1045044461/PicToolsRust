@@ -25,6 +25,7 @@ pub struct TimeSorter/*<'a>*/ {
     // pub input_files:&'a Vec<Metadata>,
     input_files: Vec<Node>,
     output_files: Vec<Node>,
+    has_changed:bool,
     pub first: i32,
     pub is_increase: bool,
 }
@@ -72,6 +73,7 @@ impl TimeSorter {
         TimeSorter {
             first: _first,
             is_increase: _is_add,
+            has_changed:false,
             input_files,
             output_files,
         }
@@ -83,12 +85,13 @@ impl TimeSorter {
     ///
     /// condition_func 判断内容
     #[allow(dead_code)]
-    fn sort_by_time<TCondition:Fn(&SystemTime,&SystemTime)->bool>(&mut self, condition_func:TCondition)
+    fn sort_by_time<TCondition>(&mut self, condition_func:TCondition)
+        where TCondition:Fn(SystemTime,SystemTime)->bool
     {
         for i in 0..self.output_files.len() - 1 {
             for j in 1..self.output_files.len()
             {
-                if condition_func(&self.output_files[i].time_stamp, &self.output_files[j].time_stamp)
+                if condition_func(self.output_files[i].time_stamp,self.output_files[j].time_stamp)
                 {
                     swap(&mut self.output_files[i], &mut self.input_files[j]);
                 }
@@ -100,14 +103,16 @@ impl TimeSorter {
 impl TAction for TimeSorter {
     fn re_sort(&mut self) {
 
-        let mut prediction : dyn Fn(&SystemTime, &SystemTime) -> bool = |a, b|{a<b};
+        // let mut prediction : dyn for<'a> Fn(&'a SystemTime, &'a SystemTime) -> bool = |a, b|{a<b};
 
-        // let mut prediction = |a,b|{a<b}; //注意mut加在前面就是可变的了FnMut了
+        let func_increase = |a, b| { a < b };
 
-        if self.is_increase == false
-        {
-            prediction = |a,b|{a>b};
-        }
+        let func_decline = |a, b| { a > b };
+
+        //rust尽可能利用编译器的上下文推导,不需要显式的定义代理类型
+        let prediction =
+            if self.is_increase == false
+            { func_increase } else { func_decline };
 
         self.sort_by_time(prediction);
     }
@@ -115,9 +120,17 @@ impl TAction for TimeSorter {
     fn change_preview(&self) -> Vec<(String, String)> {
         let mut result = Vec::with_capacity(self.output_files.len());
 
-        for output_file in &self.output_files {
-
+        for i in 0..self.output_files.len() {
+            //TODO:格式化头个index
+            let new_i = (i + (self.first as usize)).to_string();
+            let new_name = new_i+"_" + &self.output_files[i].name;
+            result.push(
+                (
+                    String::from(&self.output_files[i].name),new_name
+                )
+            );
         }
+        result
     }
 
     fn do_change(&mut self) {
