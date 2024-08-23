@@ -1,4 +1,5 @@
-use clap::{Parser,Subcommand,ValueEnum,builder::PossibleValue};
+use std::cmp::Ordering;
+use clap::{Parser, Subcommand, ValueEnum, builder::PossibleValue};
 use std::fmt;
 use std::str::FromStr;
 
@@ -167,4 +168,17 @@ pub enum SubCommands {
         /// 每段的比较方式,数量要等同于count的值
         methods : Vec<SegmentCompare>,
     },
+}
+
+impl PartialEq<Self> for SubCommands {
+    fn eq(&self, other: &Self) -> bool {
+        match (self,other) {
+            (SubCommands::CT {}, SubCommands::CT {}) => true,
+            (SubCommands::MT {}, SubCommands::MT {}) => true,
+            (SubCommands::FN { .. }, SubCommands::FN { .. }) => true,
+            (SubCommands::SS { .. }, SubCommands::SS {..}) => true,
+            (SubCommands::AS{ .. }, SubCommands::AS {..}) => true,
+            (_,_)=>false
+        }
+    }
 }

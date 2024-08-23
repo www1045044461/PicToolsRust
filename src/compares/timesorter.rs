@@ -4,6 +4,7 @@ use crate::compares::sorter_buidler::TAction;
 use std::fs::Metadata;
 use std::mem::swap;
 use std::string::String;
+use std::thread::sleep;
 use std::time::SystemTime;
 
 #[derive(Ord, PartialOrd, Eq, PartialEq)]
@@ -46,12 +47,8 @@ impl TimeSorter {
     ///
     /// _files:文件列表
     #[allow(dead_code)]
-    fn from(
-        _first: i32,
-        _is_add: bool,
-        type_: TimeSortType,
-        _files: &Vec<(&str, Metadata)>,
-    ) -> Self {
+    pub fn new(_first: i32, _is_add: bool, type_: TimeSortType, _files: &Vec<(String, Metadata)>) -> Self
+    {
         let mut input_files: Vec<Node> = Vec::with_capacity(_files.len());
 
         let mut output_files: Vec<Node> = Vec::with_capacity(_files.len());
@@ -60,24 +57,24 @@ impl TimeSorter {
         if type_ == TimeSortType::CreateTime {
             for item in _files {
                 input_files.push(Node {
-                    name: String::from(item.0),
+                    name: String::from(item.0.clone()),
                     time_stamp: item.1.created().unwrap(),
                 });
 
                 output_files.push(Node {
-                    name: String::from(item.0),
+                    name: String::from(item.0.clone()),
                     time_stamp: item.1.created().unwrap(),
                 });
             }
         } else {
             for item in _files {
                 input_files.push(Node {
-                    name: String::from(item.0),
+                    name: String::from(item.0.clone()),
                     time_stamp: item.1.modified().unwrap(),
                 });
 
                 output_files.push(Node {
-                    name: String::from(item.0),
+                    name: String::from(item.0.clone()),
                     time_stamp: item.1.modified().unwrap(),
                 });
             }
@@ -152,15 +149,28 @@ impl TAction for TimeSorter {
     }
 
     fn do_change(&mut self) {
-        let len = match self.input_files.len() <= self.output_files.len() {
-            true => self.input_files.len(),
-            false => self.output_files.len(),
-        };
+        let mut results = Vec::with_capacity(self.output_files.len());
 
-        for i in 0..len {
-            let old_str = self.input_files[i].name.clone();
-            let new_str = format!("{}_{}", i, self.output_files[i].name);
-            let ret = std::fs::rename(old_str, new_str).err();
+        for i in 0..self.output_files.len() {
+            //TODO:格式化第一个index
+            let new_index = (i+ self.first as usize).to_string();
+            let new_name = new_index + "_" + self.output_files[i].name.as_str();
+            results.push(new_name);
+        }
+
+        //生成新文件名完毕
+        for i in 0..self.output_files.len()
+        {
+            let ret = std::fs::rename(&self.output_files[i].name,
+             &results[i]);
+            if let Err(e) = ret
+            {
+                println!("Mv Failed Error{}:{} ==> {}", e.to_string(), &self.output_files[i].name,
+                         &results[i]);
+            }else {
+                println!("Mv {} ==> {}",&self.output_files[i].name,
+                         &results[i]);
+            }
         }
     }
 }
