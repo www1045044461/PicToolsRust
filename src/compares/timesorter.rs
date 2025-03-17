@@ -1,3 +1,5 @@
+use clap::builder::TryMapValueParser;
+
 use crate::compares::sorter_buidler::TAction;
 use std::fs::Metadata;
 use std::mem::swap;
@@ -21,23 +23,34 @@ struct Node {
 
 /// TODO:个人认为需要将TimeSorter应用到创建时间和修改时间就不能原封不动的保存Metadata类型
 #[allow(dead_code)]
-pub struct TimeSorter/*<'a>*/ {
+pub struct TimeSorter /*<'a>*/ {
     // pub input_files:&'a Vec<Metadata>,
     input_files: Vec<Node>,
     output_files: Vec<Node>,
     pub first: i32,
     pub is_increase: bool,
+    pub is_sorted: bool,
 }
 
 impl TimeSorter {
     /// 创建按照时间排序的方式的排序器
     ///
-    /// @param first:第一个文件序号
+    /// first:第一个文件序号
     ///
-    /// @param files:文件的列表
+    /// is_add:是否按照增序排序
+    ///
+    /// files:文件的列表
+    ///
+    /// type_:时间类型(创建时间、修改时间)
+    ///
+    /// _files:文件列表
     #[allow(dead_code)]
-    fn from(_first: i32, _is_add: bool, type_: TimeSortType, _files: &Vec<(&str, Metadata)>) -> Self
-    {
+    fn from(
+        _first: i32,
+        _is_add: bool,
+        type_: TimeSortType,
+        _files: &Vec<(&str, Metadata)>,
+    ) -> Self {
         let mut input_files: Vec<Node> = Vec::with_capacity(_files.len());
 
         let mut output_files: Vec<Node> = Vec::with_capacity(_files.len());
@@ -74,6 +87,7 @@ impl TimeSorter {
             is_increase: _is_add,
             input_files,
             output_files,
+            is_sorted: false,
         }
     }
 
@@ -83,13 +97,16 @@ impl TimeSorter {
     ///
     /// condition_func 判断内容
     #[allow(dead_code)]
-    fn sort_by_time<TCondition:Fn(&SystemTime,&SystemTime)->bool>(&mut self, condition_func:TCondition)
-    {
+    fn sort_by_time<TCondition: Fn(&SystemTime, &SystemTime) -> bool>(
+        &mut self,
+        condition_func: TCondition,
+    ) {
         for i in 0..self.output_files.len() - 1 {
-            for j in 1..self.output_files.len()
-            {
-                if condition_func(&self.output_files[i].time_stamp, &self.output_files[j].time_stamp)
-                {
+            for j in 1..self.output_files.len() {
+                if condition_func(
+                    &self.output_files[i].time_stamp,
+                    &self.output_files[j].time_stamp,
+                ) {
                     swap(&mut self.output_files[i], &mut self.input_files[j]);
                 }
             }
@@ -99,28 +116,50 @@ impl TimeSorter {
 
 impl TAction for TimeSorter {
     fn re_sort(&mut self) {
-
-        let mut prediction : dyn Fn(&SystemTime, &SystemTime) -> bool = |a, b|{a<b};
+        // let mut prediction : dyn Fn(&SystemTime, &SystemTime) -> bool = |a, b|{a<b};
+        let mut prediction: Box<dyn Fn(&SystemTime, &SystemTime) -> bool> = Box::new(|a, b| a < b);
 
         // let mut prediction = |a,b|{a<b}; //注意mut加在前面就是可变的了FnMut了
 
-        if self.is_increase == false
-        {
-            prediction = |a,b|{a>b};
+        if self.is_increase == false {
+            prediction = Box::new(|a, b| a < b);
+        } else {
+            prediction = Box::new(|a, b| a >= b);
         }
 
-        self.sort_by_time(prediction);
+        if self.is_sorted == false {
+            self.sort_by_time(prediction);
+            self.is_sorted = true;
+        }
     }
 
     fn change_preview(&self) -> Vec<(String, String)> {
-        let mut result = Vec::with_capacity(self.output_files.len());
+        let mut result: Vec<(String, String)> = Vec::with_capacity(self.output_files.len());
 
-        for output_file in &self.output_files {
+        let len = match self.input_files.len() >= self.output_files.len() {
+            true => self.output_files.len(),
+            false => self.input_files.len(),
+        };
 
+        for i in 0..len {
+            let new_str = format!("{}_{}", i, self.output_files[i].name);
+            let old_str = self.input_files[i].name.clone();
+            result.push((old_str, new_str));
         }
+
+        result
     }
 
     fn do_change(&mut self) {
-        todo!()
+        let len = match self.input_files.len() <= self.output_files.len() {
+            true => self.input_files.len(),
+            false => self.output_files.len(),
+        };
+
+        for i in 0..len {
+            let old_str = self.input_files[i].name.clone();
+            let new_str = format!("{}_{}", i, self.output_files[i].name);
+            let ret = std::fs::rename(old_str, new_str).err();
+        }
     }
 }
