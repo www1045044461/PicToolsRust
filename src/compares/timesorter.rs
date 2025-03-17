@@ -27,6 +27,7 @@ pub struct TimeSorter /*<'a>*/ {
     // pub input_files:&'a Vec<Metadata>,
     input_files: Vec<Node>,
     output_files: Vec<Node>,
+    has_changed:bool,
     pub first: i32,
     pub is_increase: bool,
     pub is_sorted: bool,
@@ -85,6 +86,7 @@ impl TimeSorter {
         TimeSorter {
             first: _first,
             is_increase: _is_add,
+            has_changed:false,
             input_files,
             output_files,
             is_sorted: false,
@@ -116,10 +118,9 @@ impl TimeSorter {
 
 impl TAction for TimeSorter {
     fn re_sort(&mut self) {
-        // let mut prediction : dyn Fn(&SystemTime, &SystemTime) -> bool = |a, b|{a<b};
         let mut prediction: Box<dyn Fn(&SystemTime, &SystemTime) -> bool> = Box::new(|a, b| a < b);
 
-        // let mut prediction = |a,b|{a<b}; //注意mut加在前面就是可变的了FnMut了
+        let func_increase = |a, b| { a < b };
 
         if self.is_increase == false {
             prediction = Box::new(|a, b| a < b);
