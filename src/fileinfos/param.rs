@@ -7,6 +7,9 @@ use std::str::FromStr;
 #[derive(Parser, Debug)]
 #[command(version,about,long_about = None)]
 pub struct Parameters {
+    ///扩展名序列 "png|jpg|rar|txt"
+    pub ext:String,
+
     /// 0 递减
     /// 1 递增
     pub operation: i8,

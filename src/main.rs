@@ -13,6 +13,12 @@ mod compares;
 mod fileinfos;
 
 fn main() {
+    let params = param::Parameters::parse();
+
+    if let Some(pat) = &params.sub_commands {
+        println!("子命令模式:{:?}",pat);
+    }
+
     let cur_path = env::current_dir().unwrap();
 
     // println!("当前目录:{}",&cur_path.to_str().unwrap());
