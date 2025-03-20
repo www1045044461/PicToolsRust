@@ -117,8 +117,6 @@ impl TAction for TimeSorter {
     fn re_sort(&mut self) {
         let mut prediction: Box<dyn Fn(&SystemTime, &SystemTime) -> bool> = Box::new(|a, b| a < b);
 
-        let func_increase = |a, b| { a < b };
-
         if self.is_increase == false {
             prediction = Box::new(|a, b| a < b);
         } else {

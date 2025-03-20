@@ -18,6 +18,7 @@ fn main() {
     // println!("当前目录:{}",&cur_path.to_str().unwrap());
 
     let _di = fs::read_dir(cur_path);
+    let mut inputs = Vec::new();
 
 
     //TODO:这里可以添加过滤器和选择器,先一致处理!
